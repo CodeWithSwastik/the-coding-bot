@@ -1,1 +1,13 @@
+# Pycache
+
+**/__pycache__
+
+# Secrets
+
 .env
+
+# Editor config
+.vscode
+
+# Database
+db
