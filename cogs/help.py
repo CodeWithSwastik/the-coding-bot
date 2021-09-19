@@ -51,6 +51,9 @@ class Help(commands.Cog):
             await ctx.send('This channel will be deleted soon. Hope you are happy with the help.')
             await asyncio.sleep(5)
             await ctx.channel.delete()
+        else:
+            await ctx.embed('This command can only be used to close help threads.')
+
 
 def setup(bot):
     bot.add_cog(Help(bot))

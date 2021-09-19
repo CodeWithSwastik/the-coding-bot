@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands, tasks
 
+import string
+import random
 
 def is_staff():
     return commands.has_any_role("Staff", "Trainee Mod")  # Staff + Trainee
@@ -91,6 +93,16 @@ class Moderation(commands.Cog):
         else:
             await ctx.embed("Invalid faq number.")
 
+    @commands.command()
+    @is_staff()
+    async def nick(self, ctx, member: discord.Member, *, nickname: str = None):
+        await self.moderate_nick(member, nickname)
+        await ctx.embed(f"Changed {member.mentions}'s nickname")
+
+    async def moderate_nick(self, member, nickname=None):
+        if nickname is None:
+            nickname = 'Moderated Nickname ' + ''.join(random.choices(string.ascii_lowercase, k=8))
+        await member.edit(nick=nickname)
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
