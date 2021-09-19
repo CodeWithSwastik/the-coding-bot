@@ -101,4 +101,8 @@ class TheCodingBot(commands.Bot):
 
 
 class CustomContext(commands.Context):
-    pass
+    
+    async def embed(self, content, **kwargs):
+        color = kwargs.pop('color', discord.Color.yellow())
+        embed = discord.Embed(description=content, color=color, **kwargs)
+        await self.send(embed=embed)

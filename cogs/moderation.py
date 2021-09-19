@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands, tasks
 
 def is_staff():
-    return commands.has_any_role('Staff', 'Trainee Moderator') # Staff + Trainee
+    return commands.has_any_role('Staff', 'Trainee Mod') # Staff + Trainee
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
