@@ -1,11 +1,11 @@
 import os
+import random
 
 import discord
 from discord import Intents
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from config import Config
-
 from utils.database import Database
 
 
@@ -35,6 +35,8 @@ class TheCodingBot(commands.Bot):
         self.load_extension("jishaku")
         self.load_extension("autoreload")
 
+        self.status_change.start()
+
     async def on_ready(self):
         print("Bot is ready.")
 
@@ -46,6 +48,10 @@ class TheCodingBot(commands.Bot):
     def tca(self):
         return self.get_guild(681882711945641997)
 
+    @property
+    def staff_role(self):
+        return self.tca.get_role(795145820210462771)
+
     async def get_context(self, message, *, cls=None):
         return await super().get_context(message, cls=cls or CustomContext)
 
@@ -55,6 +61,43 @@ class TheCodingBot(commands.Bot):
 
     async def run_async(self, func, *args, **kwargs):
         return await self.loop.run_in_executor(None, func, *args, **kwargs)
+
+    @tasks.loop(minutes=2)
+    async def status_change(self):
+        statuses = [
+            "over TCA",
+            "you",
+            "swas",
+            "@everyone",
+            "general chat",
+            "discord",
+            "new members",
+            "the staff team",
+            random.choice(self.staff_role.members).name,
+            "helpers",
+            "humans destroy the world",
+            "AI take over the world",
+            "https://youtu.be/dQw4w9WgXcQ",
+            "idiots",
+            "the beginning of WWIII",
+            "verified bot tags with envy",
+            random.choice(self.tca.get_role(737517726737629214).members).name
+            + " (Server Booster)",
+            "Server Boosters (boost to get your name on here)",
+            "OG members",
+            "dalek rising from the ashes",
+            "people get banned",
+        ]
+
+        await self.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.watching,
+                name=random.choice(statuses)
+                + " | "
+                + self.default_prefixes[0]
+                + "help",
+            )
+        )
 
 
 class CustomContext(commands.Context):
