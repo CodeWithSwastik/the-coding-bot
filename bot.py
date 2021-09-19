@@ -5,13 +5,14 @@ from discord import Intents
 from discord.ext import commands
 
 from config import Config
-#from utils.database import Database
+
+# from utils.database import Database
 
 
 class TheCodingBot(commands.Bot):
     def __init__(self):
         self.config = Config()
-        #self.db = Database()
+        # self.db = Database()
         super().__init__(
             command_prefix=commands.when_mentioned_or(self.config.bot_prefix),
             intents=Intents.all(),
@@ -20,7 +21,7 @@ class TheCodingBot(commands.Bot):
                 everyone=False, users=True, roles=False
             ),
             activity=discord.Activity(
-                type=discord.ActivityType.competing, name="a Timathon!"
+                type=discord.ActivityType.watching, name="over TCA"
             ),
         )
 
