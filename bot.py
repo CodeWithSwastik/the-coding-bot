@@ -21,7 +21,7 @@ class TheCodingBot(commands.Bot):
                 everyone=False, users=True, roles=False
             ),
             activity=discord.Activity(
-                type=discord.ActivityType.watching, name="over TCA"
+                type=discord.ActivityType.watching, name="myself start up"
             ),
         )
 
@@ -64,28 +64,26 @@ class TheCodingBot(commands.Bot):
 
     @tasks.loop(minutes=2)
     async def status_change(self):
+        await self.wait_until_ready()
         statuses = [
             "over TCA",
-            "you",
+            "you 👀",
             "swas",
             "@everyone",
             "general chat",
-            "discord",
             "new members",
             "the staff team",
+            "the mods",
             random.choice(self.staff_role.members).name,
             "helpers",
             "humans destroy the world",
             "AI take over the world",
             "https://youtu.be/dQw4w9WgXcQ",
-            "idiots",
-            "the beginning of WWIII",
             "verified bot tags with envy",
             random.choice(self.tca.get_role(737517726737629214).members).name
             + " (Server Booster)",
             "Server Boosters (boost to get your name on here)",
             "OG members",
-            "dalek rising from the ashes",
             "people get banned",
         ]
 
@@ -93,11 +91,13 @@ class TheCodingBot(commands.Bot):
             activity=discord.Activity(
                 type=discord.ActivityType.watching,
                 name=random.choice(statuses)
-                + " | "
-                + self.default_prefixes[0]
-                + "help",
+                + " | >help"
             )
         )
+
+    @status_change.before_loop
+    async def before_status_change(self):
+        await self.wait_until_ready()
 
 
 class CustomContext(commands.Context):
