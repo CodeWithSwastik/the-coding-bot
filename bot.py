@@ -42,6 +42,10 @@ class TheCodingBot(commands.Bot):
     def session(self):
         return self.http._HTTPClient__session
 
+    @property
+    def tca(self):
+        return self.get_guild(681882711945641997)
+
     async def get_context(self, message, *, cls=None):
         return await super().get_context(message, cls=cls or CustomContext)
 
