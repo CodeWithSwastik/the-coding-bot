@@ -25,8 +25,7 @@ class TheCodingBot(commands.Bot):
             ),
         )
 
-        # public cogs
-        for file in os.listdir("cogs/public") + os.listdir("cogs/private"):
+        for file in os.listdir("cogs"):
 
             if file.endswith(".py") and not file.startswith("_"):
 
