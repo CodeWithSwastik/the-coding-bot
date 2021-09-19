@@ -6,15 +6,17 @@ class Lockdown(commands.Cog):
         # TODO: Lock threads, voice channels
         self.bot = bot
 
-        # Roles on which the bot will deny perms
-        self.lockdown_roles = [836266952401223681]
+        # Roles on which the bot will deny perms on lockdown
+        self.lockdown_roles = [
+            744403871262179430 # Member
+        ]
         
         #Categories where the bot will change perms
         self.categories_to_lock = [
             681882712453545989, # Lobby
             754710748353265745, # Help
             842168374393831464, # User made bots
-            836265345257177199, # Other
+            726637781258076281, # Other
             725738091771592795, # Voice
             758698912822591510, # Music
         ] 
@@ -23,6 +25,10 @@ class Lockdown(commands.Cog):
         self.blacklisted_channels = [
             731341772755697695, # Exclusive
             754712400757784709, # how-to-get-help
+            797861120185991198, # Exclusive help
+            814129029236916274, # helper-pings
+            842171123915030548, # bot-rules
+            754992725480439809, # self advertising
         ]
     
     @property
@@ -40,11 +46,11 @@ class Lockdown(commands.Cog):
             if str(channel.type) == 'text':
                 for role_id in self.bot.lockdown_roles:
                     role = ctx.guild.get_role(role_id)
-                    # Locking the channels
                     overwrite = channel.overwrites_for(role)
                     overwrite.send_messages = False
                     await channel.set_permissions(role, overwrite=overwrite)
-    
+                    await ctx.send(channel.name)
+                    
         embed = discord.Embed(title="✅ Global lockdown successful", description=f"The server has been locked down by {ctx.author.mention}", color = discord.Color.green())
         await ctx.send(embed=embed)
 
@@ -55,7 +61,6 @@ class Lockdown(commands.Cog):
             if str(channel.type) == 'text':
                 for role_id in self.bot.lockdown_roles:
                     role = ctx.guild.get_role(role_id)
-                    # Unlocking the channels
                     overwrite = channel.overwrites_for(role)
                     overwrite.send_messages = True
                     await channel.set_permissions(role, overwrite=overwrite)
