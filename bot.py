@@ -90,8 +90,7 @@ class TheCodingBot(commands.Bot):
         await self.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching,
-                name=random.choice(statuses)
-                + " | >help"
+                name=random.choice(statuses) + " | >help",
             )
         )
 
@@ -101,8 +100,7 @@ class TheCodingBot(commands.Bot):
 
 
 class CustomContext(commands.Context):
-    
     async def embed(self, content, **kwargs):
-        color = kwargs.pop('color', discord.Color.yellow())
+        color = kwargs.pop("color", discord.Color.yellow())
         embed = discord.Embed(description=content, color=color, **kwargs)
         await self.send(embed=embed)
