@@ -11,3 +11,6 @@
 
 # Database
 db
+
+# Private cogs
+cogs/private
