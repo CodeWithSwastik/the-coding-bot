@@ -55,7 +55,7 @@ class Verification(commands.Cog):
                     await interaction.user.send(embed=embed, file=captcha)
                 except discord.Forbidden:
                     return await interaction.followup.send(
-                        "I couldn't send you a DM please open your DMs and re-click the verify button!",
+                        "I couldn't send you a DM, please open your DMs and re-click the verify button!",
                         ephemeral=True,
                     )
 
@@ -88,7 +88,7 @@ class Verification(commands.Cog):
     @commands.command()
     @is_staff()
     async def sus(self, ctx, member: discord.Member):
-        await ctx.embed(f'{self.calculate_suspicion(member)} %')
+        await ctx.embed(f'{self.calculate_suspicion(member)}%')
 
     async def create_captcha(self):
 
