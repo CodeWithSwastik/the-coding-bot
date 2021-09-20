@@ -12,6 +12,10 @@ from utils.database import Database
 def is_staff():
     return commands.has_any_role("Staff", "Trainee Mod")  # Staff + Trainee
 
+def is_higher(author: discord.Member, target: discord.Member):
+    if author.top_role.position <= target.top_role.position:
+        raise commands.CheckFailure('You do not have permissions to interact with that user')
+
 class ActionType:
     """Stuff associated with mod actions"""
 
@@ -127,6 +131,9 @@ class Moderation(commands.Cog):
     @commands.command()
     @is_staff()
     async def warn(self, ctx: commands.Context, member: discord.Member, *, reason: str):
+
+        is_higher(ctx.author, member) # Checking is user is not lower in position
+
         if reason.split()[0].endswith(("h", "hr", "m", "min", "s", "sec", "d", "days", "month")):
             duration = Duration(reason.split()[0]).to_seconds()
             reason = reason.replace(reason.split()[0], "")
