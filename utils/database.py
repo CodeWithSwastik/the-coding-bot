@@ -1,5 +1,5 @@
 from sqlmodel import create_engine, Session, SQLModel, select
-from models import * # REQUIRED IMPORT
+from .models import * # REQUIRED IMPORT
 from typing import List
 
 class Database:
