@@ -7,7 +7,7 @@ class ModAction(SQLModel, table=True):
     ModAction
     --------
     Fields:
-        case_id: Unique warn id (will be used for handling cases)
+        case_id: Unique case id (will be used for handling cases)
         user_id: ID of the user
         mod_id: ID of the moderator responsible
         action: Type of action (warn/mute/kick/ban)
