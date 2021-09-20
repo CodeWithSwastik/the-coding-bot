@@ -29,7 +29,6 @@ class Staff(commands.Cog):
         if message.content.startswith('>afk'):
             return
         
-
         if self.is_staff(message.author) and self.is_afk(message.author):
             await self.unafk(message.author)
             salute = self.bot.get_custom_emoji('salute')
