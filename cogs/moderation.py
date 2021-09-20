@@ -160,6 +160,12 @@ class Moderation(commands.Cog):
         ).set_footer(text="Open a ticket to appeal."))
 
     @commands.command()
+    @commands.has_any_role("Head Moderator", "Admin", "Admin Perms","Head Admin", "Owner")
+    async def delcase(self, ctx:commands.Context, warn_id: int):
+        self.db.modutils.modaction_delete(case_id=warn_id)
+        await ctx.send(":white_check_mark:")
+
+    @commands.command()
     @is_staff()
     async def modlogs(self, ctx: commands.Context, user: discord.Member = None):
         infractions = self.db.modutils.modaction_list_user(user.id)
@@ -175,12 +181,15 @@ class Moderation(commands.Cog):
             case_id = case.case_id
             mod = ctx.guild.get_member(case.mod_id)
             date = case.date
+            date_ts = f"<t:{int(date.timestamp())}:D>"
             expiry = date+datetime.timedelta(seconds=case.duration)
-            delta = expiry-date
+            expiry_ts = f"<t:{int(expiry.timestamp())}:D>"
+            delta = f"<t:{int(expiry.timestamp())}:R>"
+            
 
             embed.add_field(
                 name=f"Case {case_id} | {case.action}",
-                value=f"Reason: `{case.reason}` \nModerator: {mod.mention} ({mod.name}) \nDate: `{date.date()}` \nDuration: `{delta.days} days` \nExpires on: `{expiry.date()}`",
+                value=f"Reason: {case.reason} \nModerator: {mod.mention} ({mod.name}) \nDate: {date_ts} \nDuration: {delta} \nExpires on: {expiry_ts}",
                 inline=False
             )
         
