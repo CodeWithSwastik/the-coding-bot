@@ -6,6 +6,7 @@ from captcha.image import ImageCaptcha
 
 import random  
 import string
+import asyncio
 
 # >jsk py
 # ```
@@ -34,12 +35,46 @@ class Verification(commands.Cog):
             return
 
         if interaction.data.get("custom_id", "") == "verify_button":
-            await interaction.response.send_message(
-                f"You have been verified {self.bot.get_custom_emoji('greentick')}",
-                ephemeral=True,
-            )
+            greentick = self.bot.get_custom_emoji('greentick')
+            sus = self.calculate_suspicion(interaction.user)
+            if sus < 50:
+                await interaction.response.send_message(
+                    f"You have been verified {greentick}",
+                    ephemeral=True,
+                )
+                method='bot'
+            else:
+                await interaction.response.send_message(
+                    "Please solve the captcha that I will DM you in order to be verified.",
+                    ephemeral=True,
+                )
+                captcha, answer = await self.create_captcha()
+                try:
+                    embed = discord.Embed(title='Welcome to The Coding academy!', description='Please solve the captcha and send it here.\n**Your captcha**:', color=0x2F3136) 
+                    embed.set_image(url='attachment://captcha.png')
+                    await interaction.user.send(embed=embed, file=captcha)
+                except discord.Forbidden:
+                    return await interaction.followup.send(
+                        "I couldn't send you a DM please open your DMs and re-click the verify button!",
+                        ephemeral=True,
+                    )
 
-            
+                def check(m):
+                    return interaction.user.dm_channel.id == m.channel.id   
+                try:
+                    response = await self.bot.wait_for('message', check=check, timeout=60)
+                except asyncio.TimeoutError:
+                    return await interaction.user.send('Timeout. You failed to respond. Please re-click the verification button.')
+                if response.content == answer:
+                    embed = discord.Embed(title=f'Verification sucessful {greentick}', description='You have been verified in The Coding Academy.', color=discord.Color.green()) 
+                    await interaction.user.send(embed=embed)
+                else:
+                    return await interaction.user.send('Incorrect captcha. Please re-click the verification button.')
+                method = 'captcha'
+            await interaction.user.add_roles(
+                self.member_role, reason=f"Verified by {method}."
+            )
+                
 
 
     @commands.command()
@@ -60,7 +95,7 @@ class Verification(commands.Cog):
         captcha_text = ''.join(random.choices(string.digits, k=6))
         
         data = await self.bot.run_async(self.captcha.generate, captcha_text)
-        return discord.File(data, filename="captcha.png")
+        return discord.File(data, filename="captcha.png"), captcha_text
 
     def calculate_suspicion(self, member: discord.Member) -> float:
         sus = 0
