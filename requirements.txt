@@ -4,3 +4,4 @@ jishaku
 watchgod
 captcha
 sqlmodel
+psutil
