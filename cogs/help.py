@@ -16,6 +16,7 @@ class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.private_help_channel = 889149110588960838
+
     @commands.Cog.listener()
     async def on_interaction(self, interaction):
         if interaction.channel_id == self.private_help_channel:
@@ -25,7 +26,7 @@ class Help(commands.Cog):
                         interaction.channel, interaction.user.id
                     )
                 ) :
-                    await interaction.response.send_message(
+                    return await interaction.response.send_message(
                         f"You already have a private help channel: {thread.mention}",
                         ephemeral=True,
                     )
@@ -51,6 +52,9 @@ class Help(commands.Cog):
             await ctx.send('This channel will be deleted soon. Hope you are happy with the help.')
             await asyncio.sleep(5)
             await ctx.channel.delete()
+        else:
+            await ctx.embed('This command can only be used to close help threads.')
+
 
 def setup(bot):
     bot.add_cog(Help(bot))
