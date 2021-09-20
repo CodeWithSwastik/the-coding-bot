@@ -7,15 +7,40 @@ from captcha.image import ImageCaptcha
 import random  
 import string
 
+# >jsk py
+# ```
+# embed = discord.Embed(title=f'Welcome to The Coding Academy {bot.get_custom_emoji("Helloooo")}', description = 'Press the button below to be verified.', color = discord.Color(0x2F3136))
+# embed.set_footer(text='If you face any problems with the verification DM one of the moderators!')
+# button = discord.ui.Button(emoji=bot.get_custom_emoji('greentick'), custom_id='verify_button', style=discord.ButtonStyle.green)
+# view = discord.ui.View()
+# view.add_item(button)
+# await ctx.send(embed=embed, view=view)
+# ```
+
 class Verification(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.member_role_id = 744403871262179430
         self.captcha = ImageCaptcha(width = 280, height = 90)
+        self.verify_channel = 889351320371339334
 
     @property
     def member_role(self):
         return self.bot.tca.get_role(self.member_role_id)
+
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction):
+        if interaction.channel_id != self.verify_channel:
+            return
+
+        if interaction.data.get("custom_id", "") == "verify_button":
+            await interaction.response.send_message(
+                f"You have been verified {self.bot.get_custom_emoji('greentick')}",
+                ephemeral=True,
+            )
+
+            
+
 
     @commands.command()
     @is_staff()
