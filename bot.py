@@ -56,8 +56,11 @@ class TheCodingBot(commands.Bot):
         return await super().get_context(message, cls=cls or CustomContext)
 
     def get_custom_emoji(self, name):
-        emoji = discord.utils.get(self.emojis, name=name, guild__id=681882711945641997)
+        emoji = discord.utils.get(self.emojis, name=name)
         return emoji or ""
+
+    def get_custom_emojis(self, *names):
+        return [self.get_custom_emoji(n) for n in names]
 
     async def run_async(self, func, *args, **kwargs):
         return await self.loop.run_in_executor(None, func, *args, **kwargs)

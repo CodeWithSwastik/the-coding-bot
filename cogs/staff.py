@@ -110,6 +110,24 @@ class Staff(commands.Cog):
         await ctx.reply('I have called all staff. Please be patient.')
         await self.staff_chat.send(f'{self.on_patrol.mention}, {ctx.author.mention} has called all staff in {ctx.channel.mention}. Reason: {reason}')
         
+
+    @commands.command()
+    async def staff(self, ctx):
+        embed = discord.Embed(
+            title="On Patrol Staff",
+            color=discord.Color.yellow(),
+        )
+        online, dnd, idle, offline = self.bot.get_custom_emojis("online", "dnd", "idle", "offline")
+        mapping = {
+            discord.Status.online: online, 
+            discord.Status.dnd: dnd,
+            discord.Status.idle: idle,
+            discord.Status.offline: offline,
+        }
         
+        embed.description = '\n'.join([f'{m.mention} {mapping[m.status]}' for m in self.on_patrol.members])
+        await ctx.send(embed=embed)
+
+
 def setup(bot):
     bot.add_cog(Staff(bot))
