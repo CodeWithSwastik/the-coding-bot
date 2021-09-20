@@ -33,7 +33,7 @@ class ErrorHandling(commands.Cog):
             await ctx.message.clear_reactions()
             await ctx.send(
                 embed=discord.Embed(
-                    title="Unknown Error",
+                    title="An Unknown Error occurred",
                     description="Don't worry my developer has been notified about it.",
                     color=0xF5A3FB,
                 )
