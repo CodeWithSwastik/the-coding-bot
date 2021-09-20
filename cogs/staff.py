@@ -34,14 +34,14 @@ class Staff(commands.Cog):
             salute = self.bot.get_custom_emoji('salute')
             embed = discord.Embed(color=discord.Color.yellow())
             embed.description = f'Welcome back {salute} I removed your AFK.'
-            await message.reply(embed=embed)
+            await message.reply(embed=embed, delete_after=3)
 
         mentions = message.mentions
         for i in mentions:
             if self.is_staff(i) and self.is_afk(i):
                 embed = discord.Embed(color=discord.Color.yellow())
                 embed.description = f'{i.mention} is currently AFK. **{self.afks.get(i.id,"")}**'
-                await message.reply(embed=embed)
+                await message.reply(embed=embed, delete_after=3)
 
 
 
