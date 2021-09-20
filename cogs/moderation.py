@@ -97,12 +97,19 @@ class Moderation(commands.Cog):
     @is_staff()
     async def nick(self, ctx, member: discord.Member, *, nickname: str = None):
         await self.moderate_nick(member, nickname)
-        await ctx.embed(f"Changed {member.mentions}'s nickname")
+        await ctx.embed(f"Changed {member.mention}'s nickname")
 
     async def moderate_nick(self, member, nickname=None):
         if nickname is None:
             nickname = 'Moderated Nickname ' + ''.join(random.choices(string.ascii_lowercase, k=8))
         await member.edit(nick=nickname)
+
+    @commands.command()
+    @is_staff()
+    async def revive(self, ctx):
+        # TODO
+        await ctx.send("https://tenor.com/8coi.gif")
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
