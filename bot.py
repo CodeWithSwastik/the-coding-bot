@@ -14,7 +14,7 @@ class TheCodingBot(commands.Bot):
         self.config = Config()
         self.db = Database()
         super().__init__(
-            command_prefix=commands.when_mentioned_or("="),
+            command_prefix=commands.when_mentioned_or(">"),
             intents=Intents.all(),
             case_insensitive=True,
             allowed_mentions=discord.AllowedMentions(
