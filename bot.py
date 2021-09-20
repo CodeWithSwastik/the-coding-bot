@@ -14,7 +14,7 @@ class TheCodingBot(commands.Bot):
         self.config = Config()
         self.db = Database()
         super().__init__(
-            command_prefix=commands.when_mentioned_or(">"),
+            command_prefix=commands.when_mentioned_or("="),
             intents=Intents.all(),
             case_insensitive=True,
             allowed_mentions=discord.AllowedMentions(
@@ -23,6 +23,10 @@ class TheCodingBot(commands.Bot):
             activity=discord.Activity(
                 type=discord.ActivityType.watching, name="myself start up"
             ),
+            owner_ids=[
+                556119013298667520, # Swas
+                698225613617496094 # Shadow
+            ]
         )
 
         for file in os.listdir("cogs"):
@@ -39,6 +43,8 @@ class TheCodingBot(commands.Bot):
 
     async def on_ready(self):
         print("Bot is ready.")
+
+    
 
     @property
     def session(self):

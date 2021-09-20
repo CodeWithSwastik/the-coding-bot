@@ -5,3 +5,4 @@ watchgod
 captcha
 sqlmodel
 psutil
+durations

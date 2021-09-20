@@ -24,6 +24,7 @@ class ModAction(SQLModel, table=True):
     reason: str = Field(default="No reason given.")
     date: datetime.datetime = Field(default=datetime.datetime.now())
     duration: int
+
     
 
 

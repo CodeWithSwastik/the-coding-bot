@@ -1,16 +1,30 @@
 import discord
+from discord import user
 from discord.ext import commands, tasks
 
 import string
 import random
+import datetime
+from durations import Duration
+
+from utils.models import ModAction
+from utils.database import Database
 
 def is_staff():
     return commands.has_any_role("Staff", "Trainee Mod")  # Staff + Trainee
+
+class ActionType:
+    """Stuff associated with mod actions"""
+
+    default_warn_duration = 2592000 # seconds
+    default_mute_duration = 3600 # seconds
+    default_ban_duration = None # Infinite
 
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.db = Database()
 
         self.rules = []
         self.faqs = []
@@ -109,6 +123,63 @@ class Moderation(commands.Cog):
     async def revive(self, ctx):
         # TODO
         await ctx.send("https://tenor.com/8coi.gif")
+
+
+    @commands.command()
+    @is_staff()
+    async def warn(self, ctx: commands.Context, member: discord.Member, *, reason: str):
+        if reason.split()[0].endswith(("h", "hr", "m", "min", "s", "sec", "d", "days", "month")):
+            duration = Duration(reason.split()[0]).to_seconds()
+            reason = reason.replace(reason.split()[0], "")
+
+        else:
+            duration = ActionType.default_warn_duration
+
+        new_warn = ModAction(
+            user_id = member.id,
+            mod_id = ctx.author.id,
+            action = "warn",
+            reason = reason,
+            duration = duration
+        )
+
+        self.db.modutils.modaction_insert(new_warn)
+
+        delta = datetime.datetime.now()+datetime.timedelta(seconds=duration)
+        await ctx.send(embed=discord.Embed(
+            title=f":warning: {member.name} has been warned!",
+            description=f"**Reason:** `{reason}` \n**Warned By:** {ctx.author.mention} \n**Expires on:** `{delta.date()}`",
+            color=discord.Color.orange(),
+            timestamp=datetime.datetime.now()
+        ).set_footer(text="Open a ticket to appeal."))
+
+    @commands.command()
+    @is_staff()
+    async def modlogs(self, ctx: commands.Context, user: discord.Member = None):
+        infractions = self.db.modutils.modaction_list_user(user.id)
+        if len(infractions) == 0:
+            return await ctx.send("Member has no modlogs...")
+        embed = discord.Embed(
+            title=f":pencil: Modlogs | {user.name} ({user.id})",
+            color = discord.Color.random()
+        )
+        
+        for case in infractions:
+
+            case_id = case.case_id
+            mod = ctx.guild.get_member(case.mod_id)
+            date = case.date
+            expiry = date+datetime.timedelta(seconds=case.duration)
+            delta = expiry-date
+
+            embed.add_field(
+                name=f"Case {case_id} | {case.action}",
+                value=f"Reason: `{case.reason}` \nModerator: {mod.mention} ({mod.name}) \nDate: `{date.date()}` \nDuration: `{delta.days} days` \nExpires on: `{expiry.date()}`",
+                inline=False
+            )
+        
+        await ctx.send(embed=embed)
+
 
 
 def setup(bot):

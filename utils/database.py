@@ -10,7 +10,7 @@ class Database:
     # TODO
 
     def __init__(self):
-        self.db_uri = "sqlite:///../data/moderation.db"
+        self.db_uri = "sqlite:///data/moderation.db"
 
     @property
     def engine(self):
@@ -59,8 +59,8 @@ class ModUtility(Database):
             return data
 
     # List mod actions associated with a particular mod (Helpful while staff checks)
-    def modaction_list_mod(self, mod_id: int) -> List[ModAction]:
-        with self.session as session:
+    async def modaction_list_mod(self, mod_id: int) -> List[ModAction]:
+        async with self.session as session:
             data = session.exec(select(ModAction).where(ModAction.user_id == mod_id)).all()
             return data
 
