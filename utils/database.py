@@ -30,7 +30,7 @@ class Database:
         
 
 class ModUtility(Database):
-    
+
     """Functions associated with mod stuff"""
 
     # Inserting a new mod action
@@ -40,9 +40,9 @@ class ModUtility(Database):
             session.commit()
     
     # Deleting an existing mod action (using action id)
-    def modaction_delete(self, id: int) -> None:
+    def modaction_delete(self, case_id: int) -> None:
         with self.session as session:
-            data = session.exec(select(ModAction).where(ModAction.id == id)).one()
+            data = session.exec(select(ModAction).where(ModAction.case_id == case_id)).one()
             session.delete(data)
             session.commit()
 
