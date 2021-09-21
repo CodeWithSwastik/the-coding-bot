@@ -112,22 +112,62 @@ class Staff(commands.Cog):
         
 
     @commands.command()
-    async def staff(self, ctx):
+    async def staff(self, ctx, who='patrol'):
+        who = who.lower()
+        if who == 'patrol':
+            title = f"On Patrol Staff {self.bot.get_custom_emoji('policesiren')}"
+            members = self.on_patrol.members
+        elif who == 'all':
+            title = f"All Staff"
+            members = self.bot.tca.get_role(795145820210462771).members            
+
         embed = discord.Embed(
-            title="On Patrol Staff",
+            title=title,
             color=discord.Color.yellow(),
         )
         online, dnd, idle, offline = self.bot.get_custom_emojis("online", "dnd", "idle", "offline")
         mapping = {
-            discord.Status.online: online, 
-            discord.Status.dnd: dnd,
-            discord.Status.idle: idle,
-            discord.Status.offline: offline,
+            discord.Status.online : (online, 4), 
+            discord.Status.dnd    : (dnd, 3),
+            discord.Status.idle   : (idle, 2),
+            discord.Status.offline: (offline, 1),
         }
-        
-        embed.description = '\n'.join([f'{m.mention} {mapping[m.status]}' for m in self.on_patrol.members])
+
+        members = sorted(members, key=lambda m: mapping[m.status][1], reverse=True)
+        embed.description = '\n'.join([f'{mapping[m.status][0]} {m.mention}' for m in members])
         await ctx.send(embed=embed)
 
+    @commands.command(name='update-staff-list')
+    @commands.has_permissions(administrator=True)
+    async def update_staff_list(self, ctx):
+        staff_list_channel = self.bot.tca.get_channel(765066298299383809)
+        mod_roles = [
+            681895373454835749,
+            838634262693412875,
+            725899526350831616,
+            795136568805294097,
+            729530191109554237,
+            681895900070543411,
+            729537643951554583,
+        ]
+        embed = discord.Embed(title='**Staff List**', color=0x2F3136)
+        embed.description = ''
+        for r in mod_roles:
+            r = self.bot.tca.get_role(r)
+            valid_members = []
+            for m in r.members:
+                admin = m.top_role.name == 'Admin Perms' and r.name == 'Admin'
+                if m.top_role == r or admin:
+                    valid_members.append(m)
+
+            embed.description += f"{r.mention} | **{len(valid_members)}** \n"
+
+            for m in valid_members:
+                embed.description += f"> `{m.id}` {m.mention}\n"
+            embed.description += '\n'
+        await staff_list_channel.purge(limit=1)
+        await staff_list_channel.send(embed=embed)
+        await ctx.embed(f"Done {self.bot.get_custom_emoji('greentick')}")
 
 def setup(bot):
     bot.add_cog(Staff(bot))
