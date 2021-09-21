@@ -5,11 +5,11 @@ from utils.views import Confirm
 
 # >jsk py
 # ```
-# embed = discord.Embed(title='Private Help', description = 'Press the button below for private help.\nNote: This might not work as it is being tested at the moment.', color = discord.Color.yellow())
-# button = discord.ui.Button(label='Help!', emoji='🙋', custom_id='help_button', style=discord.ButtonStyle.blurple)
+# embed = discord.Embed(title='Private Help', description = 'Press the button below for private help.', color = discord.Color.yellow())
+# button = discord.ui.Button(label='Help!', emoji='🙋', custom_id='help_button', style=discord.ButtonStyle.green)
 # view = discord.ui.View()
 # view.add_item(button)
-# await ctx.send(embed=embed, view=view)
+# e=await ctx.send(embed=embed, view=view)
 # ```
 
 # TODO: >delete-stale-threads
@@ -95,7 +95,7 @@ Do not ask “will anybody help me?” or “Hello is anybody willing to help me
 
 Once your queries have been solved you can close the thread using `>close`
 """,
-            allowed_mentions=discord.AllowedMentions(users=True, roles=False),
+            allowed_mentions=discord.AllowedMentions(users=True, roles=True),
         )
         def check(m):
             return (
