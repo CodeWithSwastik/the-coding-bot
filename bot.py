@@ -12,9 +12,8 @@ from utils.database import Database
 class TheCodingBot(commands.Bot):
     def __init__(self):
         self.config = Config()
-        self.db = Database()
         super().__init__(
-            command_prefix=commands.when_mentioned_or(">"),
+            command_prefix=commands.when_mentioned_or(self.config.default_prefix),
             intents=Intents.all(),
             case_insensitive=True,
             allowed_mentions=discord.AllowedMentions(
