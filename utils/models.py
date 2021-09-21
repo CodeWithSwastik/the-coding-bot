@@ -25,6 +25,16 @@ class ModAction(SQLModel, table=True):
     date: datetime.datetime = Field(default=datetime.datetime.now())
     duration: int
 
+class LogModel(SQLModel):
+    case_id: int
+    user_id: int
+    mod_id: int
+    action: str
+    reason: str
+    expiry: datetime.datetime
+    
+
+
     
 
 

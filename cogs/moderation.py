@@ -1,12 +1,17 @@
 import discord
 from discord.ext import commands, tasks
+from discord.utils import format_dt
 
 import string
 import random
 import datetime
 from durations import Duration
+import re
+from io import BytesIO
 
-from utils.models import ModAction
+from sqlalchemy.orm.exc import NoResultFound
+
+from utils.models import ModAction, LogModel
 from utils.database import Database
 
 def is_staff():
@@ -15,6 +20,19 @@ def is_staff():
 def is_higher(author: discord.Member, target: discord.Member):
     if author.top_role.position <= target.top_role.position:
         raise commands.CheckFailure('You do not have permissions to interact with that user')
+
+# Sending logs
+async def send_logs(self, ctx: commands.Context, log: LogModel):
+    user = ctx.guild.get_member(log.user_id)
+    mod = ctx.guild.get_member(log.mod_id)
+    expiry_ts = format_dt(log.expiry, style="D")
+    embed = discord.Embed(
+        title = f"{log.action} | case {log.case_id}",
+        description=f"**Offender:** {user.name} ({user.id}) \n**Reason:** {log.reason} \n**Moderator:** {mod.mention} \n**Expires on:** {expiry_ts}",
+        color=discord.Color.orange(),
+        timestamp=datetime.datetime.now()
+    )
+    await self.bot.logs.send(embed=embed)
 
 class ActionType:
     """Stuff associated with mod actions"""
@@ -47,6 +65,7 @@ class Moderation(commands.Cog):
 
         raw_faqs = (await faq_channel.fetch_message(794786168461066241)).content
         self.faqs = self.parse_rules(raw_faqs)
+
 
     @setup.before_loop
     async def before_setup(self):
@@ -134,7 +153,7 @@ class Moderation(commands.Cog):
 
         is_higher(ctx.author, member) # Checking is user is not lower in position
 
-        if reason.split()[0].endswith(("h", "hr", "m", "min", "s", "sec", "d", "days", "month")):
+        if re.findall("\d[hmsd]",reason.split()[0]):
             duration = Duration(reason.split()[0]).to_seconds()
             reason = reason.replace(reason.split()[0], "")
 
@@ -151,10 +170,22 @@ class Moderation(commands.Cog):
 
         self.db.modutils.modaction_insert(new_warn)
 
-        case_id = len(self.db.modutils.modaction_list_all())
-
         delta = datetime.datetime.now()+datetime.timedelta(seconds=duration)
-        delta_ts = f"<t:{int(delta.timestamp())}:D>"
+        delta_ts = format_dt(delta, style="D")
+
+        case = self.db.modutils.modaction_list_user(member.id)[-1]
+        case_id = case.case_id
+        
+        log = LogModel(
+            case_id = case_id, # Manually setting case_id after inserting to db since it doesnt return the generated one.
+            user_id = case.user_id,
+            mod_id = case.mod_id,
+            action = case.action,
+            reason = case.reason,
+            expiry = delta
+        )
+
+        await send_logs(self, ctx, log=log)
 
         try:
             await member.send(embed=discord.Embed(
@@ -171,7 +202,18 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_any_role("Head Moderator", "Admin", "Admin Perms","Head Admin", "Owner")
     async def delcase(self, ctx:commands.Context, warn_id: int):
-        self.db.modutils.modaction_delete(case_id=warn_id)
+        res = self.db.modutils.modaction_delete(case_id=warn_id)
+        if not res:
+            return await ctx.send("Invalid Case ID...")
+        await ctx.send(":white_check_mark:")
+    
+    @commands.command(aliases=["clw", "clearall"])
+    @commands.has_guild_permissions(administrator=True)
+    async def clearmodlogs(self, ctx: commands.Context, member: discord.Member):
+        cases = self.db.modutils.modaction_list_user(member.id)
+        for case in cases:
+            self.db.modutils.modaction_delete(case.case_id)
+            
         await ctx.send(":white_check_mark:")
 
     @commands.command()
@@ -190,10 +232,10 @@ class Moderation(commands.Cog):
             case_id = case.case_id
             mod = ctx.guild.get_member(case.mod_id)
             date = case.date
-            date_ts = f"<t:{int(date.timestamp())}:D>"
+            date_ts = format_dt(date, style="D")
             expiry = date+datetime.timedelta(seconds=case.duration)
-            expiry_ts = f"<t:{int(expiry.timestamp())}:D>"
-            delta = f"<t:{int(expiry.timestamp())}:R>"
+            expiry_ts = format_dt(expiry, style="D")
+            delta = format_dt(expiry, style="R")
             
 
             embed.add_field(
@@ -203,6 +245,44 @@ class Moderation(commands.Cog):
             )
         
         await ctx.send(embed=embed)
+
+    # Evidence command
+    @commands.command()
+    @is_staff()
+    async def evidence(self, ctx: commands.Context, case_id: int, *, proof=None):
+        if not ctx.message.attachments:
+            return await ctx.send("Please attach evidence.")
+        
+        files = [discord.File(BytesIO(await attachment.read()), filename=attachment.filename) for attachment in ctx.message.attachments]
+
+        
+        case = self.db.modutils.modaction_fetch(case_id)
+        if not case:
+            return await ctx.send("Invalid Case ID...")
+
+        user = ctx.guild.get_member(case.user_id)
+        mod = ctx.guild.get_member(case.mod_id)
+
+        if ctx.author.id != mod.id:
+            return await ctx.send("Stop posting evidence for others, let them do it lol...")
+
+        embed = discord.Embed(
+            title=f"{user.name} ({user.id})",
+            description=f"**Case ID:** {case.case_id} \n**Mod:** {mod.mention} \n**Reason:** {case.reason} \n**Proof:** {proof}",
+            color=discord.Color.yellow(),
+            timestamp=datetime.datetime.now()
+        )
+        warn_evidence: discord.TextChannel = self.bot.tca.get_channel(760186182343852032)
+        ban_evidence: discord.TextChannel = self.bot.tca.get_channel(795930932367720458)
+
+        if case.action == "warn":
+            await warn_evidence.send(embed=embed)
+            await warn_evidence.send(files=files)
+            await ctx.send(":white_check_mark: Evidence sent successfully.")
+        elif case.action == "ban":
+            await ban_evidence.send(embed=embed, files=files)
+            await ban_evidence.send(files=files)
+            await ctx.send(":white_check_mark: Evidence sent successfully.")
 
 
 

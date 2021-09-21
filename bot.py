@@ -57,6 +57,10 @@ class TheCodingBot(commands.Bot):
     def staff_role(self):
         return self.tca.get_role(795145820210462771)
 
+    @property
+    def logs(self):
+        return self.tca.get_channel(816512034228666419)
+
     async def get_context(self, message, *, cls=None):
         return await super().get_context(message, cls=cls or CustomContext)
 
