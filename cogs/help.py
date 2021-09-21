@@ -23,7 +23,7 @@ class Help(commands.Cog):
         if interaction.channel_id != self.private_help_channel:
             return
 
-        if interaction.data.get("custom_id", "") == "help_button_test":
+        if interaction.data.get("custom_id", "") == "help_button":
             if (
                 thread := self.find_existing_thread(
                     interaction.channel, interaction.user.id
@@ -74,16 +74,35 @@ class Help(commands.Cog):
         thread = await interaction.channel.create_thread(
             name=f"help {interaction.user.name} {interaction.user.id}",
         )
-        await thread.edit(locked=True)
-
-        await thread.send(
-            f"{interaction.user.mention} needs help! <@&760844827804958730> <@&{language_select.value}>",
-            allowed_mentions=discord.AllowedMentions(users=True, roles=False),
-        )
+        # await thread.edit(locked=True) idk?
         await interaction.edit_original_message(
             content=f"Your private help thread has been created: {thread.mention}",
             view=None
         )
+
+        await thread.send(
+            f"<@&760844827804958730> <@&{language_select.value}>\n"
+            f"{interaction.user.mention}, please send your problem/question here.\n"
+"""
+1. Post your code
+2. Post your errors 
+3. Send a short description of what you are trying to make
+
+Do not ask “will anybody help me?” or “Hello is anybody willing to help me out” as it wastes and makes helping you out slower, simply post your issue and a helper will get to you as soon as possible.
+
+Once your queries have been solved you can close the thread using `>close`
+""",
+            allowed_mentions=discord.AllowedMentions(users=True, roles=False),
+        )
+        def check(m):
+            return (
+                m.author == interaction.user and 
+                m.channel == thread and 
+                len(m.content) > 35
+            )
+
+        message = await self.bot.wait_for('message', check=check)
+        await message.pin()
 
     @commands.command()
     async def close(self, ctx):
