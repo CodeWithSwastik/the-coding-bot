@@ -169,5 +169,31 @@ class Staff(commands.Cog):
         await staff_list_channel.send(embed=embed)
         await ctx.embed(f"Done {self.bot.get_custom_emoji('greentick')}")
 
+    @commands.command(name='update-helper-list')
+    @commands.has_permissions(administrator=True)
+    async def update_helper_list(self, ctx):
+        staff_list_channel = self.bot.tca.get_channel(849559721127575562)
+        mod_roles = [
+            783909939311280129,
+            726650418444107869,
+        ]
+        embed = discord.Embed(title='**Helper List**', color=0x2F3136)
+        embed.description = ''
+        for r in mod_roles:
+            r = self.bot.tca.get_role(r)
+            valid_members = []
+            for m in r.members:
+                if m.top_role == r:
+                    valid_members.append(m)
+
+            embed.description += f"{r.mention} | **{len(valid_members)}** \n"
+
+            for m in valid_members:
+                embed.description += f"> `{m.id}` {m.mention}\n"
+            embed.description += '\n'
+        await staff_list_channel.purge(limit=1)
+        await staff_list_channel.send(embed=embed)
+        await ctx.embed(f"Done {self.bot.get_custom_emoji('greentick')}")
+
 def setup(bot):
     bot.add_cog(Staff(bot))

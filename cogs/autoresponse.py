@@ -19,13 +19,13 @@ class Autoresponse(commands.Cog):
     def get_info_message(self):
         info = [
             #"You can suggest new cards like these to be added! Just DM me to send a modmail to us.",
-            f"**Fun Fact**: We currently have {len(self.bot.tca.members)} people in {self.bot.tca.name}!",
+            f"We currently have {len(self.bot.tca.members)} people in {self.bot.tca.name}!",
             "If you want to be pinged during certain events, go visit <#806909970482069556> for more information!",
             "If you win an event, you might get a custom role with a custom role icon!",
             "If a message gets 5 stars it'll show up in the <#763039747190030407>",
             "You can support the server for free by voting for us on [disboard](https://disboard.org/server/681882711945641997) or typing `!d bump` in <#682157382062964781>"
         ]
-        return f'{self.bot.get_custom_emoji("info")} {random.choice(info)}'
+        return f'{self.bot.get_custom_emoji("info")}  {random.choice(info)}'
 
 def setup(bot):
     bot.add_cog(Autoresponse(bot))
