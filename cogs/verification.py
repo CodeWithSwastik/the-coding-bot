@@ -65,7 +65,7 @@ class Verification(commands.Cog):
                     response = await self.bot.wait_for('message', check=check, timeout=60)
                 except asyncio.TimeoutError:
                     return await interaction.user.send('Timeout. You failed to respond. Please re-click the verification button.')
-                if response.content == answer:
+                if response.content.replace(' ', '') == answer:
                     embed = discord.Embed(title=f'Verification sucessful {greentick}', description='You have been verified in The Coding Academy.', color=discord.Color.green()) 
                     await interaction.user.send(embed=embed)
                 else:
