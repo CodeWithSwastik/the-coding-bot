@@ -93,7 +93,7 @@ Do not ask “will anybody help me?” or “Hello is anybody willing to help me
 
 Once your queries have been solved you can close the thread using `>close`
 """,
-            allowed_mentions=discord.AllowedMentions(users=True, roles=True),
+            allowed_mentions=discord.AllowedMentions(users=True, roles=False),
         )
         def check(m):
             return (
