@@ -76,7 +76,7 @@ class Help(commands.Cog):
             type=discord.ChannelType.public_thread
         )
         await interaction.channel.purge(limit=1)
-        
+
         # await thread.edit(locked=True) idk?
         await interaction.edit_original_message(
             content=f"Your private help thread has been created: {thread.mention}",
@@ -109,7 +109,7 @@ Once your queries have been solved you can close the thread using `>close`
 
     @commands.command()
     async def close(self, ctx):
-        if str(ctx.channel.type) == 'private_thread' and ctx.channel.parent.id == self.private_help_channel:
+        if str(ctx.channel.type) == 'public_thread' and ctx.channel.parent.id == self.private_help_channel:
             await ctx.send('This channel will be archived soon. Hope you are happy with the help.')
             await asyncio.sleep(5)
             await ctx.channel.edit(archived=True)
