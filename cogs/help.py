@@ -75,12 +75,14 @@ class Help(commands.Cog):
             name=f"help {interaction.user.name} {interaction.user.id}",
             type=discord.ChannelType.public_thread
         )
+        await interaction.channel.purge(limit=1)
+        
         # await thread.edit(locked=True) idk?
         await interaction.edit_original_message(
             content=f"Your private help thread has been created: {thread.mention}",
             view=None
         )
-
+        
         await thread.send(
             f"<@&760844827804958730> <@&{language_select.value}>\n"
             f"{interaction.user.mention}, please send your problem/question here.\n"
