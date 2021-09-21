@@ -12,9 +12,8 @@ from utils.database import Database
 class TheCodingBot(commands.Bot):
     def __init__(self):
         self.config = Config()
-        self.db = Database()
         super().__init__(
-            command_prefix=commands.when_mentioned_or(">"),
+            command_prefix=commands.when_mentioned_or(self.config.default_prefix),
             intents=Intents.all(),
             case_insensitive=True,
             allowed_mentions=discord.AllowedMentions(
@@ -62,8 +61,11 @@ class TheCodingBot(commands.Bot):
         return await super().get_context(message, cls=cls or CustomContext)
 
     def get_custom_emoji(self, name):
-        emoji = discord.utils.get(self.emojis, name=name, guild__id=681882711945641997)
+        emoji = discord.utils.get(self.emojis, name=name)
         return emoji or ""
+
+    def get_custom_emojis(self, *names):
+        return [self.get_custom_emoji(n) for n in names]
 
     async def run_async(self, func, *args, **kwargs):
         return await self.loop.run_in_executor(None, func, *args, **kwargs)
