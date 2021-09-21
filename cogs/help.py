@@ -12,12 +12,12 @@ from utils.views import Confirm
 # await ctx.send(embed=embed, view=view)
 # ```
 
-
+# TODO: >delete-stale-threads
 class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.private_help_channel = 889149110588960838
-
+        
     @commands.Cog.listener()
     async def on_interaction(self, interaction):
         if interaction.channel_id != self.private_help_channel:
@@ -92,7 +92,7 @@ Do not ask “will anybody help me?” or “Hello is anybody willing to help me
 
 Once your queries have been solved you can close the thread using `>close`
 """,
-            allowed_mentions=discord.AllowedMentions(users=True, roles=False),
+            allowed_mentions=discord.AllowedMentions(users=True, roles=True),
         )
         def check(m):
             return (
