@@ -151,13 +151,22 @@ class Moderation(commands.Cog):
 
         self.db.modutils.modaction_insert(new_warn)
 
+        case_id = len(self.db.modutils.modaction_list_all())
+
         delta = datetime.datetime.now()+datetime.timedelta(seconds=duration)
-        await ctx.send(embed=discord.Embed(
-            title=f":warning: {member.name} has been warned!",
-            description=f"**Reason:** `{reason}` \n**Warned By:** {ctx.author.mention} \n**Expires on:** `{delta.date()}`",
-            color=discord.Color.orange(),
-            timestamp=datetime.datetime.now()
-        ).set_footer(text="Open a ticket to appeal."))
+        delta_ts = f"<t:{int(delta.timestamp())}:D>"
+
+        try:
+            await member.send(embed=discord.Embed(
+                title=f":warning: You have been warned!",
+                description=f"**Case ID:** {case_id} \n**Reason:** {reason} \n**Expires on:** {delta_ts}",
+                color=discord.Color.orange(),
+                timestamp=datetime.datetime.now()
+            ).set_footer(text="Open a ticket to appeal."))
+        except:
+            pass
+
+        await ctx.embed(f":warning: Warned `{member.name}#{member.discriminator}`")
 
     @commands.command()
     @commands.has_any_role("Head Moderator", "Admin", "Admin Perms","Head Admin", "Owner")
