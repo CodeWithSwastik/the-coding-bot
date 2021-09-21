@@ -98,6 +98,8 @@ class Verification(commands.Cog):
         return discord.File(data, filename="captcha.png"), captcha_text
 
     def calculate_suspicion(self, member: discord.Member) -> float:
+        # TODO: Check how many people joined in the last 5 seconds
+
         sus = 0
         if member.avatar is None: 
             # default pfp
