@@ -73,6 +73,7 @@ class Help(commands.Cog):
 
         thread = await interaction.channel.create_thread(
             name=f"help {interaction.user.name} {interaction.user.id}",
+            type=discord.ChannelType.public_thread
         )
         # await thread.edit(locked=True) idk?
         await interaction.edit_original_message(
