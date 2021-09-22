@@ -1,3 +1,4 @@
+from typing import List
 import discord
 from discord.ext import commands, tasks
 from discord.utils import format_dt
@@ -22,10 +23,20 @@ def is_higher(author: discord.Member, target: discord.Member):
         raise commands.CheckFailure('You do not have permissions to interact with that user')
 
 # Sending logs
-async def send_logs(self, ctx: commands.Context, log: LogModel):
+async def send_logs(self, ctx: commands.Context, case: ModAction):
+
+    log = LogModel(
+            case_id = case.case_id, # Manually setting case_id after inserting to db since it doesnt return the generated one.
+            user_id = case.user_id,
+            mod_id = case.mod_id,
+            action = case.action,
+            reason = case.reason,
+            expiry = datetime.datetime.now()+datetime.timedelta(seconds=case.duration)
+        )
+
     user = ctx.guild.get_member(log.user_id)
     mod = ctx.guild.get_member(log.mod_id)
-    expiry_ts = format_dt(log.expiry, style="D")
+    expiry_ts = format_dt(log.expiry)
     embed = discord.Embed(
         title = f"{log.action} | case {log.case_id}",
         description=f"**Offender:** {user.name} ({user.id}) \n**Reason:** {log.reason} \n**Moderator:** {mod.mention} \n**Expires on:** {expiry_ts}",
@@ -51,6 +62,11 @@ class Moderation(commands.Cog):
         self.faqs = []
 
         self.setup.start()
+        self.loop_database.start()
+
+    @property
+    def mute_role(self):
+        return self.bot.tca.get_role(766469426429820949)
 
     @tasks.loop(count=1)
     async def setup(self):
@@ -66,13 +82,40 @@ class Moderation(commands.Cog):
         raw_faqs = (await faq_channel.fetch_message(794786168461066241)).content
         self.faqs = self.parse_rules(raw_faqs)
 
-
     @setup.before_loop
     async def before_setup(self):
         await self.bot.wait_until_ready()
 
     def parse_rules(self, text: str) -> list:
         return text.split("\n\n")
+
+    @tasks.loop(minutes=1)
+    async def loop_database(self):
+        data: List[ModAction] = self.db.modutils.modaction_list_all()
+        for case in data:
+            delta = case.date-datetime.datetime.now()
+            if delta.seconds <= 0:
+                try:
+                    if case.action == "mute":
+                        user: discord.Member = self.bot.tca.get_member(case.user_id)
+                        if self.mute_role in user.roles:
+                            await user.remove_roles(self.mute_role)
+                            try:
+                                await user.send(f"You have been unmuted. Reason: Mute expired!")
+                            except:
+                                pass
+
+                    if case.action == "ban":
+                        user: discord.Member = self.bot.tca.get_member(case.user_id)
+                        try:
+                            await self.bot.tca.fetch_ban(user)
+                            await self.bot.tca.unban(user, reason="Ban expired")
+                        except:
+                            pass
+                    self.db.modutils.modaction_delete(case.case_id)
+                except:
+                    pass
+
 
     @commands.command(aliases=["sm"])
     @is_staff()
@@ -149,15 +192,16 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @is_staff()
-    async def warn(self, ctx: commands.Context, member: discord.Member, *, reason: str):
+    async def warn(self, ctx: commands.Context, member: discord.Member, *, raw: str):
 
         is_higher(ctx.author, member) # Checking is user is not lower in position
 
-        if re.findall("\d[hmsd]",reason.split()[0]):
-            duration = Duration(reason.split()[0]).to_seconds()
-            reason = reason.replace(reason.split()[0], "")
+        if re.findall("\d[hmsd]",raw.split()[0]):
+            duration = Duration(raw.split()[0]).to_seconds()
+            reason = raw.replace(raw.split()[0], "")
 
         else:
+            reason=raw
             duration = ActionType.default_warn_duration
 
         new_warn = ModAction(
@@ -170,22 +214,12 @@ class Moderation(commands.Cog):
 
         self.db.modutils.modaction_insert(new_warn)
 
-        delta = datetime.datetime.now()+datetime.timedelta(seconds=duration)
-        delta_ts = format_dt(delta, style="D")
-
-        case = self.db.modutils.modaction_list_user(member.id)[-1]
+        case = self.db.modutils.modaction_list_user(member.id)[-1]  #Pulling the case from db to get additional info like id and logs
         case_id = case.case_id
-        
-        log = LogModel(
-            case_id = case_id, # Manually setting case_id after inserting to db since it doesnt return the generated one.
-            user_id = case.user_id,
-            mod_id = case.mod_id,
-            action = case.action,
-            reason = case.reason,
-            expiry = delta
-        )
 
-        await send_logs(self, ctx, log=log)
+        await send_logs(self, ctx, case=case)
+
+        delta_ts = format_dt(datetime.datetime.now()+datetime.timedelta(seconds=duration))
 
         try:
             await member.send(embed=discord.Embed(
@@ -199,13 +233,71 @@ class Moderation(commands.Cog):
 
         await ctx.embed(f":warning: Warned `{member.name}#{member.discriminator}`")
 
+    # Mute command
+    @commands.command()
+    async def mute(self, ctx: commands.Context, member: discord.Member, *, raw: str="No reason given."):
+        is_higher(ctx.author, member) # Checking is user is not lower in position
+
+        if re.findall("\d[hmsd]",raw.split()[0]):
+            duration = Duration(raw.split()[0]).to_seconds()
+            reason = raw.replace(raw.split()[0], "")
+
+        else:
+            reason=raw
+            duration = ActionType.default_mute_duration
+
+        new_mute = ModAction(
+            user_id = member.id,
+            mod_id = ctx.author.id,
+            action = "mute",
+            reason = reason,
+            duration = duration
+        )
+
+        self.db.modutils.modaction_insert(new_mute)
+        
+        await member.add_roles(self.mute_role)
+
+        case = self.db.modutils.modaction_list_user(member.id)[-1]    
+        await send_logs(self, ctx, case=case)
+
+        delta_ts = format_dt(datetime.datetime.now()+datetime.timedelta(seconds=duration))
+        try:
+            await member.send(embed=discord.Embed(
+                title=f":warning: You have been muted!",
+                description=f"**Case ID:** {case.case_id} \n**Reason:** {reason} \n**Expires on:** {delta_ts}",
+                color=discord.Color.orange(),
+                timestamp=datetime.datetime.now()
+            ).set_footer(text="Open a ticket to appeal."))
+        except:
+            pass
+
+        await ctx.embed(f":mute: Muted `{member.name}#{member.discriminator}`")
+
     @commands.command()
     @commands.has_any_role("Head Moderator", "Admin", "Admin Perms","Head Admin", "Owner")
-    async def delcase(self, ctx:commands.Context, warn_id: int):
-        res = self.db.modutils.modaction_delete(case_id=warn_id)
-        if not res:
+    async def delcase(self, ctx:commands.Context, case_id: int):
+        case = self.db.modutils.modaction_fetch(case_id=case_id)
+        try:
+            self.db.modutils.modaction_delete(case_id=case_id)
+        except:
+            pass
+
+        if not case:
             return await ctx.send("Invalid Case ID...")
+
+        user = ctx.guild.get_member(case.user_id)
+        mod = ctx.guild.get_member(case.mod_id)
+        expiry = datetime.datetime.now()+datetime.timedelta(seconds=case.duration)
+        expiry_ts = format_dt(expiry)
+
         await ctx.send(":white_check_mark:")
+        await self.bot.logs.send(embed=discord.Embed(
+            title=f"case delete | case {case.case_id}",
+            description=f"**Offender:** {user.name} ({user.id}) \n**Reason:** {case.reason} \n**Deleted by:** {mod.mention} \n**Expires on:** {expiry_ts}",
+            color=discord.Color.yellow(),
+            timestamp=datetime.datetime.now()
+        ))
     
     @commands.command(aliases=["clw", "clearall"])
     @commands.has_guild_permissions(administrator=True)
@@ -232,9 +324,9 @@ class Moderation(commands.Cog):
             case_id = case.case_id
             mod = ctx.guild.get_member(case.mod_id)
             date = case.date
-            date_ts = format_dt(date, style="D")
+            date_ts = format_dt(date)
             expiry = date+datetime.timedelta(seconds=case.duration)
-            expiry_ts = format_dt(expiry, style="D")
+            expiry_ts = format_dt(expiry)
             delta = format_dt(expiry, style="R")
             
 
@@ -272,17 +364,11 @@ class Moderation(commands.Cog):
             color=discord.Color.yellow(),
             timestamp=datetime.datetime.now()
         )
-        warn_evidence: discord.TextChannel = self.bot.tca.get_channel(760186182343852032)
-        ban_evidence: discord.TextChannel = self.bot.tca.get_channel(795930932367720458)
+        evidence_ch: discord.TextChannel = self.bot.tca.get_channel(760186182343852032)
 
-        if case.action == "warn":
-            await warn_evidence.send(embed=embed)
-            await warn_evidence.send(files=files)
-            await ctx.send(":white_check_mark: Evidence sent successfully.")
-        elif case.action == "ban":
-            await ban_evidence.send(embed=embed, files=files)
-            await ban_evidence.send(files=files)
-            await ctx.send(":white_check_mark: Evidence sent successfully.")
+        await evidence_ch.send(embed=embed)
+        await evidence_ch.send(files=files)
+        await ctx.send(":white_check_mark: Evidence sent successfully.")
 
 
 
