@@ -24,10 +24,12 @@ class Lockdown(commands.Cog):
         self.blacklisted_channels = [
             731341772755697695,  # Exclusive
             754712400757784709,  # how-to-get-help
+            889149110588960838,  # private help
             797861120185991198,  # Exclusive help
             814129029236916274,  # helper-pings
             842171123915030548,  # bot-rules
             754992725480439809,  # self advertising
+            
         ]
 
     @property
@@ -38,6 +40,7 @@ class Lockdown(commands.Cog):
             if c.category
             and c.category.id in self.categories_to_lock
             and c.id not in self.blacklisted_channels
+            and '[-]' not in str(c.topic)
         ]
 
     @property

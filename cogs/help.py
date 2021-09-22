@@ -84,7 +84,7 @@ class Help(commands.Cog):
         )
         
         await thread.send(
-            f"<@&760844827804958730> <@&{language_select.value}>\n"
+            f"<@&726650418444107869> <@&{language_select.value}>\n"
             f"{interaction.user.mention}, please send your problem/question here.\n"
 """
 1. Post your code
