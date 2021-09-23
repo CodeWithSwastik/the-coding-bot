@@ -31,7 +31,7 @@ class LogModel(SQLModel):
     mod_id: int
     action: str
     reason: str
-    expiry: datetime.datetime
+    expiry: Optional[datetime.datetime]
     
 
 

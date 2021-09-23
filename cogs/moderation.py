@@ -23,20 +23,26 @@ def is_higher(author: discord.Member, target: discord.Member):
         raise commands.CheckFailure('You do not have permissions to interact with that user')
 
 # Sending logs
-async def send_logs(self, ctx: commands.Context, case: ModAction):
+async def send_logs(self, case: ModAction, action=None, reason=None, send_duration=True):
+    if not action:
+        action = case.action
+    if not reason:
+        reason = case.reason
+    
+    expiry = datetime.datetime.now()+datetime.timedelta(seconds=case.duration) if send_duration else None # For kicks and bans
 
     log = LogModel(
             case_id = case.case_id, # Manually setting case_id after inserting to db since it doesnt return the generated one.
             user_id = case.user_id,
             mod_id = case.mod_id,
-            action = case.action,
-            reason = case.reason,
-            expiry = datetime.datetime.now()+datetime.timedelta(seconds=case.duration)
+            action = action,
+            reason = reason,
+            expiry = expiry
         )
 
-    user = ctx.guild.get_member(log.user_id)
-    mod = ctx.guild.get_member(log.mod_id)
-    expiry_ts = format_dt(log.expiry)
+    user = self.bot.tca.get_member(log.user_id)
+    mod = self.bot.tca.get_member(log.mod_id)
+    expiry_ts = format_dt(log.expiry) if expiry else None
     embed = discord.Embed(
         title = f"{log.action} | case {log.case_id}",
         description=f"**Offender:** {user.name} ({user.id}) \n**Reason:** {log.reason} \n**Moderator:** {mod.mention} \n**Expires on:** {expiry_ts}",
@@ -50,7 +56,8 @@ class ActionType:
 
     default_warn_duration = 2592000 # seconds
     default_mute_duration = 3600 # seconds
-    default_ban_duration = None # Infinite
+    default_ban_duration = 999999999 # Infinite
+    default_kick_duration = 999999999 # Need this cuz duration field cant be empty
 
 
 class Moderation(commands.Cog):
@@ -94,7 +101,7 @@ class Moderation(commands.Cog):
         data: List[ModAction] = self.db.modutils.modaction_list_all()
         for case in data:
             delta = case.date-datetime.datetime.now()
-            if delta.seconds <= 0:
+            if delta <= datetime.timedelta(seconds=1):        
                 try:
                     if case.action == "mute":
                         user: discord.Member = self.bot.tca.get_member(case.user_id)
@@ -113,6 +120,8 @@ class Moderation(commands.Cog):
                         except:
                             pass
                     self.db.modutils.modaction_delete(case.case_id)
+                    await send_logs(self, case=case, action="case delete", reason=f"{case.action} expired", send_duration=False)
+                    
                 except:
                     pass
 
@@ -217,7 +226,7 @@ class Moderation(commands.Cog):
         case = self.db.modutils.modaction_list_user(member.id)[-1]  #Pulling the case from db to get additional info like id and logs
         case_id = case.case_id
 
-        await send_logs(self, ctx, case=case)
+        await send_logs(self, case=case)
 
         delta_ts = format_dt(datetime.datetime.now()+datetime.timedelta(seconds=duration))
 
@@ -259,12 +268,12 @@ class Moderation(commands.Cog):
         await member.add_roles(self.mute_role)
 
         case = self.db.modutils.modaction_list_user(member.id)[-1]    
-        await send_logs(self, ctx, case=case)
+        await send_logs(self, case=case)
 
         delta_ts = format_dt(datetime.datetime.now()+datetime.timedelta(seconds=duration))
         try:
             await member.send(embed=discord.Embed(
-                title=f":warning: You have been muted!",
+                title=f":mute: You have been muted!",
                 description=f"**Case ID:** {case.case_id} \n**Reason:** {reason} \n**Expires on:** {delta_ts}",
                 color=discord.Color.orange(),
                 timestamp=datetime.datetime.now()
@@ -275,8 +284,40 @@ class Moderation(commands.Cog):
         await ctx.embed(f":mute: Muted `{member.name}#{member.discriminator}`")
 
     @commands.command()
+    async def kick(self, ctx: commands.Context, member: discord.Member, *, reason="No reason provided"):
+        is_higher(ctx.author, member) # Checking is user is not lower in position
+
+        duration = ActionType.default_kick_duration # Need this cuz required int field
+
+        new_kick = ModAction(
+            user_id = member.id,
+            mod_id = ctx.author.id,
+            action = "kick",
+            reason = reason,
+            duration = duration
+        )
+
+        self.db.modutils.modaction_insert(new_kick)
+        case = self.db.modutils.modaction_list_user(member.id)[-1]    
+        await send_logs(self, case=case, send_duration=False)
+
+        try:
+            await member.send(embed=discord.Embed(
+                title=f":boot: You have been kicked!",
+                description=f"**Case ID:** {case.case_id} \n**Reason:** {reason}",
+                color=discord.Color.orange(),
+                timestamp=datetime.datetime.now()
+            ).set_footer(text="Open a ticket to appeal."))
+        except:
+            pass
+
+        await ctx.embed(f":boot: Kicked `{member.name}#{member.discriminator}`")
+        await ctx.guild.kick(member, reason=reason)
+
+
+    @commands.command()
     @commands.has_any_role("Head Moderator", "Admin", "Admin Perms","Head Admin", "Owner")
-    async def delcase(self, ctx:commands.Context, case_id: int):
+    async def delcase(self, ctx:commands.Context, case_id: int, *, reason = "No reason given"):
         case = self.db.modutils.modaction_fetch(case_id=case_id)
         try:
             self.db.modutils.modaction_delete(case_id=case_id)
@@ -286,18 +327,9 @@ class Moderation(commands.Cog):
         if not case:
             return await ctx.send("Invalid Case ID...")
 
-        user = ctx.guild.get_member(case.user_id)
-        mod = ctx.guild.get_member(case.mod_id)
-        expiry = datetime.datetime.now()+datetime.timedelta(seconds=case.duration)
-        expiry_ts = format_dt(expiry)
-
         await ctx.send(":white_check_mark:")
-        await self.bot.logs.send(embed=discord.Embed(
-            title=f"case delete | case {case.case_id}",
-            description=f"**Offender:** {user.name} ({user.id}) \n**Reason:** {case.reason} \n**Deleted by:** {mod.mention} \n**Expires on:** {expiry_ts}",
-            color=discord.Color.yellow(),
-            timestamp=datetime.datetime.now()
-        ))
+        
+        await send_logs(self, case=case, action="case delete", reason=reason)
     
     @commands.command(aliases=["clw", "clearall"])
     @commands.has_guild_permissions(administrator=True)

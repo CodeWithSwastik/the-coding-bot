@@ -15,7 +15,7 @@ class Database:
 
     @property
     def engine(self):
-        return create_engine(self.db_uri, echo=True)
+        return create_engine(self.db_uri)
 
     @property
     def session(self) -> Session:
