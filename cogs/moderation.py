@@ -245,6 +245,8 @@ class Moderation(commands.Cog):
     # Mute command
     @commands.command()
     async def mute(self, ctx: commands.Context, member: discord.Member, *, raw: str="No reason given."):
+
+        # TODO: Role cache
         is_higher(ctx.author, member) # Checking is user is not lower in position
 
         if re.findall("\d[hmsd]",raw.split()[0]):
@@ -283,6 +285,7 @@ class Moderation(commands.Cog):
 
         await ctx.embed(f":mute: Muted `{member.name}#{member.discriminator}`")
 
+    # Kick command
     @commands.command()
     async def kick(self, ctx: commands.Context, member: discord.Member, *, reason="No reason provided"):
         is_higher(ctx.author, member) # Checking is user is not lower in position
@@ -314,6 +317,60 @@ class Moderation(commands.Cog):
         await ctx.embed(f":boot: Kicked `{member.name}#{member.discriminator}`")
         await ctx.guild.kick(member, reason=reason)
 
+    # Ban command
+    @commands.command()
+    async def ban(self, ctx:commands.Context, member: discord.Member, *, raw: str = "No reason provided"):
+        is_higher(ctx.author, member) # Checking is user is not lower in position
+
+        if re.findall("\d[hmsd]",raw.split()[0]):
+            duration = Duration(raw.split()[0]).to_seconds()
+            reason = raw.replace(raw.split()[0], "")
+
+        else:
+            reason=raw
+            duration = ActionType.default_ban_duration
+
+        new_ban = ModAction(
+            user_id = member.id,
+            mod_id = ctx.author.id,
+            action = "ban",
+            reason = reason,
+            duration = duration
+        )
+
+        self.db.modutils.modaction_insert(new_ban)
+        case = self.db.modutils.modaction_list_user(member.id)[-1]  
+
+        send_duration = case.duration != 999999999
+
+        await send_logs(self, case=case, send_duration=send_duration)
+        
+        try:
+            await member.send(embed=discord.Embed(
+                title=f":boot: You have been banned!",
+                description=f"**Case ID:** {case.case_id} \n**Reason:** {reason}",
+                color=discord.Color.orange(),
+                timestamp=datetime.datetime.now()
+            ).set_footer())
+        except:
+            pass
+
+        await ctx.embed(f":boot: Banned `{member.name}#{member.discriminator}`")
+        await ctx.guild.ban(member, reason=reason)
+
+    @commands.command()
+    @commands.has_any_role("Head Moderator", "Admin", "Admin Perms","Head Admin", "Owner")
+    async def unban(self, ctx:commands.Context, member: discord.User, *, reason="No reason provided"):
+        try:
+            await ctx.guild.fetch_ban(member)
+        except discord.NotFound:
+            return await ctx.send('That user is not banned')
+        
+        # case = self.db.modutils.modaction_list_user(member.id)[-1] 
+        # self.db.modutils.modaction_delete(case.case_id)
+        # await send_logs(self, case, action="unban", send_duration=False)
+        await ctx.guild.unban(member, reason=reason)
+        await ctx.embed(f":white_check_mark: Unbanned `{member.name}#{member.discriminator}`")
 
     @commands.command()
     @commands.has_any_role("Head Moderator", "Admin", "Admin Perms","Head Admin", "Owner")
@@ -342,7 +399,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @is_staff()
-    async def modlogs(self, ctx: commands.Context, user: discord.Member = None):
+    async def modlogs(self, ctx: commands.Context, user: discord.User = None):
         infractions = self.db.modutils.modaction_list_user(user.id)
         if len(infractions) == 0:
             return await ctx.send("Member has no modlogs...")
