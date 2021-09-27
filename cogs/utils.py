@@ -39,18 +39,18 @@ class Utility(commands.Cog):
             )
             self.busy = False
 
-        print(self.average_time)
+        #print(self.average_time)
         if self.average_time < .8 and not self.busy:
-                if (message.created_at - self.last_change).total_seconds() < 15: # dont spam
-                    return
-                self.busy = True
-                idk = round(1/self.average_time)
-                await message.channel.edit(slowmode_delay=idk)
-                await message.channel.send(
-                    f'I set slowmode to {idk} as the chat is a bit fast.'
-                )
-                self.last_change = message.created_at
-                self.busy = False
+            if (message.created_at - self.last_change).total_seconds() < 15: # dont spam
+                return
+            self.busy = True
+            idk = round(1/self.average_time)
+            await message.channel.edit(slowmode_delay=idk)
+            await message.channel.send(
+                f'I set slowmode to {idk} as the chat is a bit fast.'
+            )
+            self.last_change = message.created_at
+            self.busy = False
 
 
         del self.previous_messages[0]   
