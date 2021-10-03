@@ -2,6 +2,7 @@ import discord
 import asyncio
 from discord.ext import commands
 from utils.views import Confirm
+import re
 
 # >jsk py
 # ```
@@ -18,6 +19,34 @@ class Help(commands.Cog):
         self.bot = bot
         self.private_help_channel = 889149110588960838
         
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot: 
+            return
+        if message.channel.category and message.channel.category.id != 754710748353265745:
+            return
+
+        if 'Traceback' in message.content or 'exception' in message.content.lower():
+            if 'ModuleNotFoundError:' in message.content:
+                module = re.findall(r"'.*'", message.content)[-1][1:-1] 
+                if module == 'pycord':
+                    return await message.reply(f'The correct import for pycord is `import discord`')
+                if '.' in module:
+                    module = module.split('.')[0]
+                await message.reply(f'Did you try `pip install {module}`')
+            elif 'SyntaxError:' in message.content:
+                await message.reply(f'This could be helpful: <https://realpython.com/invalid-syntax-python/>')
+            elif 'IndentationError:' in message.content:
+                await message.reply(f'This could be helpful: <https://appuals.com/fix-indentation-error-python/>')
+            elif 'ZeroDivisionError:' in message.content:
+                await message.reply(
+"""The error is kind of self-explanatory. You tried to divide something by 0 which is impossible.
+
+This usually happens when you divide something with a user input and the user inputs 0.
+
+To fix this, use an if statement to check if the number is 0 and dont divide if it is, or use a try-except to catch the error.""")
+
+
     @commands.Cog.listener()
     async def on_interaction(self, interaction):
         if interaction.channel_id != self.private_help_channel:
