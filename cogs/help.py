@@ -44,7 +44,23 @@ class Help(commands.Cog):
 
 This usually happens when you divide something with a user input and the user inputs 0.
 
-To fix this, use an if statement to check if the number is 0 and dont divide if it is, or use a try-except to catch the error.""")
+To fix this, use an if statement to check if the number is 0 and dont divide if it is, or use a try-except to catch the error.
+
+```py
+try:
+  res = a / b
+except ZeroDivisionError:
+  print('You may not divide by zero')
+```
+""")
+        if 'except:' in message.content:
+            await message.reply('Tip: You have a bare except in your code, I would recommend you to use `except Exception:`\nWould be even better if you specify the exception type. You should never use bare excepts in your code.')
+
+        
+        if '`' in message.content:
+            res, val = check_unmatched(message.content)
+            if res:
+                await message.reply(f'You have an {val} in your code!')
 
 
     @commands.Cog.listener()
@@ -197,3 +213,13 @@ class LanguageSelect(discord.ui.Select):
         self.disabled = True
         self.view.stop()
         await interaction.response.defer()
+
+def check_unmatched(string):
+    temp = string
+    brackets = ['()', '{}', '[]']
+    for x in brackets:
+        c = temp.count(x[0]) + temp.count(x[1])
+        if c % 2 != 0:
+            return True, f'Unmatched {x!r}'
+
+    return False, 'Nothing unmatched'
