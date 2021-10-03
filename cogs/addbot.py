@@ -32,7 +32,6 @@ class AddBot(commands.Cog):
     
     def parse_msg_id(self, bot_id, content):
         content = content[content.index(':-'):].split('\n')
-        print(content)
         for i in content:
             if str(bot_id) in i:
                 return int(i.split(':')[1]), i
@@ -131,7 +130,6 @@ class AddBot(commands.Cog):
         await e.edit(embed = embed)
 
         await msg.edit(content=msg.content.replace(full_text, ''))
-        print(bot_msg_id)
         await bot.remove_roles(*bot.roles[1:])
         await bot.add_roles(ctx.guild.get_role(894211972894191616))
         try:
@@ -172,7 +170,6 @@ class AddBot(commands.Cog):
         await e.edit(embed = embed)
 
         await msg.edit(content=msg.content.replace(full_text, ''))
-        print(bot_msg_id)
         await bot.kick(reason=f'Denied by {ctx.author.name}')
         try:
             owner = await self.get_bot_owner(embed)
