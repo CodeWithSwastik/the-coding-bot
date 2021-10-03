@@ -7,6 +7,7 @@ from utils.views import Confirm
 from datetime import datetime
 
 class Staff(commands.Cog):
+    # Add staff checks :yeah:
     def __init__(self, bot):
         self.bot = bot
         self.on_patrol_id = 726441123966484600
@@ -99,11 +100,11 @@ class Staff(commands.Cog):
         embed.description = 'If you abuse this you will be punished severely.'
 
         confirm_view = Confirm(ctx.author)
-        msg = await ctx.reply(content = 'e', embed=embed, view=confirm_view)
+        msg = await ctx.reply(content = '\u200b', embed=embed, view=confirm_view)
 
-        await confirm_view.wait()
-        if not confirm_view.value:
-            # User selected cancel
+        result = await confirm_view.wait()
+        if result or not confirm_view.value:
+            # User selected cancel or timeout
             return await msg.delete()
 
         self.last_cas = datetime.now()
