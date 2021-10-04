@@ -23,7 +23,7 @@ class Help(commands.Cog):
     async def on_message(self, message):
         if message.author.bot: 
             return
-        if message.channel.category and message.channel.category.id != 754710748353265745:
+        if hasattr(message.channel, 'category') and message.channel.category and message.channel.category.id != 754710748353265745:
             return
 
         if 'Traceback' in message.content or 'File' in message.content:
