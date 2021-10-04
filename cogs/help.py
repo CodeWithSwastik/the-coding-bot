@@ -62,10 +62,11 @@ except ZeroDivisionError:
             if res:
                 await message.reply(f'You have an {val} in your code!')
             if '```py' in message.content:
+                
                 for i in message.content.split('\n'):
-                    keywords = ['if', 'elif', 'else', 'for', 'while', 'def', 'async']
-                    if any(i.replace(' ', '').startswith(s+ ' ') for s in keywords) and ':' not in i:
-                        await message.reply(f'> {i}\nYou missed a colon (:) in this line')
+                    keywords = ['if', 'elif', 'else', 'for', 'while', 'def', 'async', 'try', 'except']
+                    if any(i.lstrip().startswith(s+ ' ') for s in keywords) and ':' not in i:
+                        await message.reply(f'> {i}\nYou missed a colon `:` in this line')
 
 
 
