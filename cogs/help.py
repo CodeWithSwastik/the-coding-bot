@@ -26,7 +26,7 @@ class Help(commands.Cog):
         if message.channel.category and message.channel.category.id != 754710748353265745:
             return
 
-        if 'Traceback' in message.content or 'exception' in message.content.lower():
+        if 'Traceback' in message.content or 'File' in message.content:
             if 'ModuleNotFoundError:' in message.content:
                 module = re.findall(r"'.*'", message.content)[-1][1:-1] 
                 if module == 'pycord':
@@ -57,10 +57,16 @@ except ZeroDivisionError:
             await message.reply('Tip: You have a bare except in your code, I would recommend you to use `except Exception:`\nWould be even better if you specify the exception type. You should never use bare excepts in your code.')
 
         
-        if '`' in message.content:
+        if '`' in message.content: # check code
             res, val = check_unmatched(message.content)
             if res:
                 await message.reply(f'You have an {val} in your code!')
+            if '```py' in message.content:
+                for i in message.content.split('\n'):
+                    keywords = ['if', 'elif', 'else', 'for', 'while', 'def', 'async']
+                    if any(i.replace(' ', '').startswith(s+ ' ') for s in keywords) and ':' not in i:
+                        await message.reply(f'> {i}\nYou missed a colon (:) in this line')
+
 
 
     @commands.Cog.listener()
@@ -215,11 +221,10 @@ class LanguageSelect(discord.ui.Select):
         await interaction.response.defer()
 
 def check_unmatched(string):
-    temp = string
     brackets = ['()', '{}', '[]']
     for x in brackets:
-        c = temp.count(x[0]) + temp.count(x[1])
-        if c % 2 != 0:
-            return True, f'Unmatched {x!r}'
-
+        if string.count(x[0]) > string.count(x[1]):
+            return True, f'Unclosed {x[0]!r}'
+        elif string.count(x[0]) < string.count(x[1]):
+            return True, f'Unopened {x[1]!r}'
     return False, 'Nothing unmatched'
