@@ -22,9 +22,9 @@ class Moderation(commands.Cog):
         rules_channel = await self.bot.fetch_channel(681887262136598589)
         faq_channel = await self.bot.fetch_channel(725960895481774084)
 
-        raw_rules = (await rules_channel.fetch_message(790896473231196170)).content
+        raw_rules = (await rules_channel.fetch_message(894118032174092329)).content
         raw_rules += (
-            "\n\n" + (await rules_channel.fetch_message(790896673991557120)).content
+            "\n\n" + (await rules_channel.fetch_message(894118113111576598)).content
         )
         self.rules = self.parse_rules(raw_rules)[:-1]
 
@@ -96,6 +96,9 @@ class Moderation(commands.Cog):
     @commands.command()
     @is_staff()
     async def nick(self, ctx, member: discord.Member, *, nickname: str = None):
+        if ctx.author.top_role <= member.top_role:
+            return await ctx.send(f'You cannot do this as that person has a higher role than you.')    
+
         await self.moderate_nick(member, nickname)
         await ctx.embed(f"Changed {member.mention}'s nickname")
 

@@ -20,7 +20,7 @@ class AntiRaid(commands.Cog):
             await asyncio.sleep(60*3)
             await message.author.remove_roles(self.muted_role)
             await message.author.add_roles(*roles)            
-
+        
 def setup(bot):
     bot.add_cog(AntiRaid(bot))
 
