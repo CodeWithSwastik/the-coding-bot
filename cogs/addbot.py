@@ -1,3 +1,4 @@
+import asyncio
 from discord.errors import InvalidArgument
 from utils.views import Confirm
 import discord
@@ -19,6 +20,11 @@ class AddBot(commands.Cog):
         return 894205037079851018
 
     @property
+    def add_bot_channel(self):
+        return self.bot.get_channel(894208222678892574)
+
+
+    @property
     def testing_guild(self):
         return self.bot.get_guild(841721684876328961)
 
@@ -28,7 +34,7 @@ class AddBot(commands.Cog):
     
     @property
     def user_bot_role(self):
-        return self.tca.get_role(842101681806376980) if self.bot.tca else None
+        return self.bot.tca.get_role(842101681806376980) if self.bot.tca else None
     
     def parse_msg_id(self, bot_id, content):
         content = content[content.index(':-'):].split('\n')
@@ -108,8 +114,8 @@ class AddBot(commands.Cog):
         embed = discord.Embed(description=f'{hellno} {text}', color=0xff0000)
         await ctx.send(embed=embed)
 
-    #@commands.user_command(name='Approve Bot', guild_ids=[841721684876328961])
-    @commands.slash_command(name='approve', guild_ids=[841721684876328961])
+    @commands.user_command(name='Approve Bot', guild_ids=[841721684876328961])
+    #commands.slash_command(name='approve', guild_ids=[841721684876328961])
     async def approve_bot(self, ctx, bot: discord.Member):
         if not bot.bot:
             return await ctx.respond("You can't approve a non-bot.")
@@ -132,6 +138,14 @@ class AddBot(commands.Cog):
         await msg.edit(content=msg.content.replace(full_text, ''))
         await bot.remove_roles(*bot.roles[1:])
         await bot.add_roles(ctx.guild.get_role(894211972894191616))
+
+
+        embed.description = 'Press the button to get the invite link.'
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="Add this bot", emoji="🔗"))
+        await self.add_bot_channel.send(content=bot.id, embed=embed, view=view)
+
+
         try:
             owner = await self.get_bot_owner(embed)
             await owner.send(f'Your bot, {embed.author.name} has been approved in The Coding Realm and will be added soon.')
@@ -139,8 +153,8 @@ class AddBot(commands.Cog):
             pass
         await ctx.respond("Bot approved.")
 
-    @commands.slash_command(name='deny', guild_ids=[841721684876328961])
-    #commands.user_command(name='Deny Bot', guild_ids=[841721684876328961])
+    #@commands.slash_command(name='deny', guild_ids=[841721684876328961])
+    commands.user_command(name='Deny Bot', guild_ids=[841721684876328961])
     async def deny_bot(self, ctx, bot: discord.Member):
         if not bot.bot:
             return await ctx.respond("You can't deny a non-bot.")
@@ -170,13 +184,52 @@ class AddBot(commands.Cog):
         await e.edit(embed = embed)
 
         await msg.edit(content=msg.content.replace(full_text, ''))
-        await bot.kick(reason=f'Denied by {ctx.author.name}')
         try:
             owner = await self.get_bot_owner(embed)
             await owner.send(f'Your bot, {embed.author.name} has been declined. Reason: {reason_of_denial}')
         except discord.Forbidden:
             pass
+        await bot.kick(reason=f'Denied by {ctx.author.name}')
         await ctx.respond("Bot denied. It has been kicked from this server.")
 
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction):
+        if interaction.channel_id != self.add_bot_channel.id:
+            return
+
+        if not interaction.message:
+            return
+
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("You don't have permissions to add the bot!", ephemeral=True)
+
+        bot_id = int(interaction.message.content)
+        invite = discord.utils.oauth_url(bot_id, guild=interaction.guild)
+
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="Invite the bot", url=invite))
+        await interaction.response.send_message("**IMPORTANT**: Please add the bot within 5 minutes otherwise the bot will have elevated permissions!", view = view)
+
+        def check(m):
+            return m.bot and m.id == bot_id
+
+        try:
+            bot_joined = await self.bot.wait_for('member_join', check=check, timeout=300)
+        except asyncio.TimeoutError:
+            return        
+
+        await bot_joined.add_roles(self.user_bot_role)
+
+        embed = interaction.message.embeds[0]
+        embed.set_footer(text=f'Added by {interaction.user}', icon_url=interaction.user.display_avatar.url)
+        embed.set_field_at(0, name='Status', value='Added')
+        embed.add_field(name='Added by', value=interaction.user.mention + ' (' + str(interaction.user) + ')')
+        embed.description = 'Added'
+        embed.color = discord.Color.green()
+        embed.set_author(name=embed.author.name, icon_url=embed.author.icon_url)
+        embed.timestamp = discord.utils.utcnow()
+        await interaction.message.edit(content=None, embed=embed, view=None)
+        await interaction.delete_original_message()
+        
 def setup(bot):
     bot.add_cog(AddBot(bot))
