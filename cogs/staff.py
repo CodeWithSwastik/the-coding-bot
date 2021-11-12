@@ -19,6 +19,10 @@ class Staff(commands.Cog):
         return self.bot.tca.get_role(self.on_patrol_id)
 
     @property
+    def on_patrol_helper(self):
+        return self.bot.tca.get_role(760844827804958730)
+
+    @property
     def staff_chat(self):
         return self.bot.tca.get_channel(735864475994816576)
 
@@ -195,6 +199,18 @@ class Staff(commands.Cog):
         await staff_list_channel.purge(limit=1)
         await staff_list_channel.send(embed=embed)
         await ctx.embed(f"Done {self.bot.get_custom_emoji('greentick')}")
+
+    @commands.command()
+    @commands.has_role("Official Helper")
+    async def onpatrol(self, ctx):
+        await ctx.author.add_roles(self.on_patrol_helper)
+        await ctx.send("You are now on patrol.")
+
+    @commands.command()
+    @commands.has_role("Official Helper")
+    async def offpatrol(self, ctx):
+        await ctx.author.remove_roles(self.on_patrol_helper)
+        await ctx.send("You are now off patrol.")
 
 def setup(bot):
     bot.add_cog(Staff(bot))
