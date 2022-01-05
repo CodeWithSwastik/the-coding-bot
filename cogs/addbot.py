@@ -74,7 +74,7 @@ class AddBot(commands.Cog):
 
 
         embed = discord.Embed(title='Is this correct?', description=f'**Reason:** {reason}')
-        embed.set_author(name=str(bot), icon_url=bot.avatar.url)
+        embed.set_author(name=str(bot), icon_url=bot.avatar.url or discord.Embed.Empty)
         
         confirm_view = Confirm(ctx.author)
         msg = await ctx.reply(content = '\u200b', embed=embed, view=confirm_view)
