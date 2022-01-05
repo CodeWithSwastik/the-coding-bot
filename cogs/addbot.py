@@ -74,7 +74,7 @@ class AddBot(commands.Cog):
 
 
         embed = discord.Embed(title='Is this correct?', description=f'**Reason:** {reason}')
-        embed.set_author(name=str(bot), icon_url=bot.avatar.url or discord.Embed.Empty)
+        embed.set_author(name=str(bot), icon_url=bot.display_avatar.url)
         
         confirm_view = Confirm(ctx.author)
         msg = await ctx.reply(content = '\u200b', embed=embed, view=confirm_view)
@@ -97,7 +97,7 @@ class AddBot(commands.Cog):
         embed.add_field(name='Submitted By', value=ctx.author.mention + ' (' + str(ctx.author) + ')')
         embed.add_field(name='Reason', value=reason)
         embed.add_field(name='Bot Account', value=bot.mention)
-        embed.set_author(name=str(bot), icon_url=bot.avatar.url, url=invite)
+        embed.set_author(name=str(bot), icon_url=bot.display_avatar.url, url=invite)
         ch_msg = await self.pending_channel.send(embed=embed)
         msg = await self.get_pending_message()
         await msg.edit(content = msg.content+f'\n{bot.id}:{ch_msg.id}')
